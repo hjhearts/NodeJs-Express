@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <input type="button" id="requestButton" name="requestButton" value="List">
+    <div id="results"></div>
+    <script src="javascripts/jquery-3.1.1.min.js"></script>
+    <script src="javascripts/jquery.jsonrpc.js"></script>
+    <script>
+        $(function(){
+            $.jsonRPC.setup({
+                endPoint:'http://localhost:3000/api',
+                namespace:''
+            })
+        });
+        function println(data) {
+            $("#results").append('<p>' + data + '</p>');
+        }
+        $('#requestButton').on('click', function(){
+            var method = 'listuser';
+            var id = 1004;
+            var params = [];
+            sendRequest(method, id, params);
+        });
+        function sendRequest(method, id, params){
+            $.jsonRPC.request(method, {
+                id:id,
+                params:params,
+                success:function(data){
+                    println('Get Request');
+                    processRequest(data);
+                },
+                error:function(data){
+                    println('error');
+                    processRequest(data);
+                }
+            });
+        }
+        function processRequest(data){
+            if(Array.isArray(data.result)){
+                println('User count : ' + data.result.length);
+                data.result.forEach(function(item, index){
+                    println('#' + index + ':' + item.email + ', ' + item.name);
+                });
+            }else{
+                println('result is not a Array');
+            }
+        }
+    </script>
+</body>
+</html>

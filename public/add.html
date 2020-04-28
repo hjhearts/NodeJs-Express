@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h3>JSON-RPC Test2</h3>
+    <input type="number" id="aInput" name="aInput">
+    <p> + </p>
+    <input type="number" id="bInput" name="bInput">
+    <br>
+    <br>
+    <input type="button" id="requestButton" name="requestButton" value="ADD">
+    <div id="results"></div>
+    <script src="javascripts/jquery-3.1.1.min.js"></script>
+    <script src="javascripts/jquery.jsonrpc.js"></script>
+    <script>
+        $(function(){
+            $.jsonRPC.setup({
+                endPoint:'http://localhost:3000/api',
+                namespace:''
+            })
+        });
+        function println(data) {
+            $("#results").append('<p>' + data + '</p>');
+        }
+        $('#requestButton').on('click', function(){
+            var a = parseInt($('#aInput').val());
+            var b = parseInt($('#bInput').val());
+            var method = 'add';
+            $.jsonRPC.request(method, {
+                id : 1002,
+                params : [a, b],
+                success : function(data){
+                    println('Get Request');
+                    println(data.result);
+                },
+                error : function(data){
+                    println('error');
+                    println(data.error.code + ' : ' +data.error.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

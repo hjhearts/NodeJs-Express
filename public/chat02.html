@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Client 02</title>
+</head>
+<body>
+<h3>Chat Client 02</h3>
+<br>
+<div>
+    <input type="text" id="hostInput" value="localhost">
+    <input type="text" id="portInput" value="3000">
+    <input type="button" id="connectButton" value="Connect">
+</div>
+<div>
+    <div>
+        <span>Sender ID : </span>
+        <input type="text" id="senderInput" value="test01">
+    </div>
+    <div>
+        <span>Receiver ID : </span>
+        <input tpye="text" id="recepientInput" value="ALL">
+    </div>
+    <div>
+        <span>Message DATA : </span>
+        <input type="text" id="dataInput" value="HELLO!">
+    </div>
+    <br>
+    <input type="button" id="sendButton" value="Send">
+</div>
+<hr/>
+<p> Result : </p>
+<div id="result"></div>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.2/socket.io.js"></script>
+<script>
+    var host;
+    var port;
+    var socket;
+    $(function(){
+        $('#connectButton').bind('click', function(e){
+            println('connectButton Clicked');
+            host = $('#hostInput').val();
+            port = $('#portInput').val();
+            connectToServer();
+        });
+    });
+    function connectToServer(){
+        var options = {'forceNew' : true};
+        var url = 'http://' + host + ':' + port;
+        socket = io.connect(url, options);
+        socket.on('connect', function(){
+            println('Connect to Web Socket Server' + url);
+            socket.on('message', function(message){
+                console.log(JSON.stringify(message));
+                println('<p>Receive Message :' + message.sender + ',' + message.recepient + ','
+                + message.command + ',' + message.type + ',' + message.data + '</p>');
+            })
+        });
+        socket.on('disconnect', function(){
+            println('Disconnect to Web Socket Server');
+        })
+    }
+    function println(data){
+        console.log(data);
+        $('#result').append('<p>' + data + '</p>');
+    }
+    $('#sendButton').bind('click', function(e){
+        var sender = $('#senderInput').val();
+        var recepient = $('#recepientInput').val();
+        var data = $('#dataInput').val();
+        var output = {sender:sender, recepient:recepient, command:'chat', type:'text', data:data};
+        console.log('Send data for server : ' + JSON.stringify(output));
+        if(socket === undefined){
+            alert('not connect at server');
+            return;
+        }
+        socket.emit('message', output);
+    })
+</script>
+</body>
+</html>

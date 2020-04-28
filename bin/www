@@ -1,0 +1,199 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('untitled7:server');
+var http = require('http');
+var socketIO = require('socket.io');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+var login_ids = {};
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+var io = socketIO.listen(server);
+io.sockets.on('connection', function(socket){
+  console.log('connection info : ' + socket.request.connection._peername.address);
+  socket.remoteAddress = socket.request.connection._peername.address;
+  socket.remotePort = socket.request.connection._peername.port;
+  socket.on('message', function(message){
+    console.log('message event');
+    console.dir(message);
+    if(message.recepient === 'ALL'){
+      console.log('to All Clients');
+      socket.broadcast.emit('message', message);
+    }else{
+      if(message.command === 'chat') {
+        if (login_ids[message.recepient]) {
+          console.log('find id');
+          io.sockets.connected[login_ids[message.recepient]].emit('message', message);
+          sendResponse(socket, 'message', '200', 'send message');
+        } else {
+          sendResponse(socket, 'login', '404', 'cannot find id');
+        }
+      }else if(message.command === 'groupChat'){
+        io.sockets.in(message.recepient).emit('message', message);
+        sendResponse(socket, 'message', '200', 'send message to group');
+      }
+    }
+  });
+  socket.on('login', function(login){
+    console.log('login event');
+    console.dir(login);
+    console.log('connection socket id : ' + socket.id);
+    login_ids[login.id] = socket.id;
+    socket.login_id = login.id;
+    console.log('connect count : ' + Object.keys(login_ids).length);
+    sendResponse(socket, 'login', '200', 'logged in');
+  });
+  socket.on('logout', function(id){
+    console.log('logout event');
+    if(login_ids[id.id]){
+      delete login_ids[id.id];
+      sendResponse(socket, 'logout', '200', 'logged out');
+    }else{
+      sendResponse(socket, 'logout', '404', 'cannot find id');
+    }
+  });
+  socket.on('room', function(room){
+    console.log('room event');
+    if(room.command === 'create'){
+      if(io.sockets.adapter.rooms[room.roomId]){
+        console.log('already exist room');
+      }else{
+        console.log('new room');
+        socket.join(room.roomId);
+        var curRoom = io.sockets.adapter.rooms[room.roomId];
+        curRoom.id = room.roomId;
+        curRoom.name = room.roomName;
+        curRoom.owner = room.roomOwner;
+      }
+    }else if(room.command === 'update'){
+      var curRoom = io.sockets.adapter.rooms[room.roomId];
+      curRoom.id = room.roomId;
+      curRoom.name = room.roomName;
+      curRoom.owner = room.roomOwner;
+    }else if(room.command === 'delete'){
+      socket.leave(room.roomId);
+      if(io.sockets.adapter.rooms[room.roomId]){
+        delete io.sockets.adapter.rooms[room.roomId];
+      }else{
+        console.log('not exist room');
+      }
+    }else if(room.command === 'join'){
+      socket.join(room.roomId);
+      sendResponse(socket, 'room', '200', 'Enter Room');
+    }else if(room.command === 'leave'){
+      socket.leave(room.roomId);
+      sendResponse(socket, 'room', '200', 'Leave Room');
+    }
+    var roomList = getRoomList();
+    var output = {command:'list', rooms:roomList};
+    io.sockets.emit('room', output);
+  })
+});
+function sendResponse(socket, command, code, message){
+  var statusObj = {command:command, code:code, message:message};
+  socket.emit('response', statusObj);
+}
+function getRoomList(){
+  console.dir(io.sockets.adapter.rooms);
+  var roomList = [];
+  Object.keys(io.sockets.adapter.rooms).forEach(function(roomId){
+    console.log('current room id : ' + roomId);
+    var outRoom = io.sockets.adapter.rooms[roomId];
+    var foundDefault = false;
+    var index = 0;
+    Object.keys(outRoom.sockets).forEach(function(key){
+      console.log('#' + index + ':' + key + ',' + outRoom.sockets[key]);
+      if(roomId === key){
+        foundDefault = true;
+        console.log('this is default room');
+      }
+      index++;
+    });
+    if(!foundDefault){
+      roomList.push(outRoom);
+    }
+  });
+  console.log('[ROOM LIST]');
+  console.dir(roomList);
+  return roomList;
+}
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}

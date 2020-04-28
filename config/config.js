@@ -1,0 +1,84 @@
+module.exports = {
+    server_port:3000,
+    dbURL:'mongodb://localhost:27017/local',
+    route_info:[
+        {
+            file:'./user',
+            path:'/process/login',
+            method:'login',
+            type:'post'
+        },
+        {
+            file:'./user',
+            path:'/process/addUser',
+            method:'add',
+            type:'post'
+        },
+
+        {
+            file:'./user',
+            path:'/process/listUser',
+            method:'listUser',
+            type:'post'
+        },
+        {
+            file:'./coffeeshop',
+            path:'/process/addcoffeeshop',
+            method:'add',
+            type:'post'
+        },
+        {
+            file:'./coffeeshop',
+            path:'/process/listcoffeeshop',
+            method:'list',
+            type:'post'
+        },
+        {
+            file:'./coffeeshop',
+            path:'/process/nearcoffeeshop',
+            method:'findNear',
+            type:'post'
+        },
+        {
+            file:'./coffeeshop',
+            path:'/process/withincoffeeshop',
+            method:'findWithin',
+            type:'post'
+        },
+        {
+            file:'./coffeeshop',
+            path:'/process/circlecoffeeshop',
+            method:'findCircle',
+            type:'post'
+        },
+        {
+            file:'./coffeeshop',
+            path:'/process/nearcoffeeshop2',
+            method:'findNear2',
+            type:'post'
+        },
+        {
+            file:'./coffeeshop',
+            path:'/process/withincoffeeshop2',
+            method:'findWithin2',
+            type:'post'
+        },
+    ]
+    ,
+    db_schemas:[
+
+        {
+            file:'./user_schema',
+            collection:'passportusers',
+            schemaName:'UserSchema',
+            modelName:'UserModel'
+        },
+        {
+            file:'./coffeeshop_schema',
+            collection:'coffeeshop',
+            schemaName: 'CoffeeShopSchema',
+            modelName: 'CoffeeShopModel'
+        }
+    ],
+    jsonrpc_api_path : '/api'
+};
